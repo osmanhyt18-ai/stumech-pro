@@ -27,7 +27,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("⚙️ StuMech Pro v2.2: Tam Donanımlı Kesit Analizörü")
+st.title("⚙️ StuMech Pro : Tam Donanımlı Kesit Analizörü")
 
 # 2. GİRİŞ PARAMETRELERİ
 st.sidebar.header("🏢 Sistem Geometrisi")
