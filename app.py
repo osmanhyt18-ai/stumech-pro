@@ -87,7 +87,14 @@ fig.add_trace(go.Scatter(x=[0, L], y=[-h-0.2, -h-0.2], mode='lines+markers', lin
 fig.add_annotation(x=L/2, y=-h-0.4, text=f"L={L}m", showarrow=False, font=dict(color="#fbbf24"), row=1, col=1)
 
 if "Kopru" in sistem_tipi:
-    fig.add_trace(go.Scatter(x=[0, L], y=[-h/2-0.1], mode='markers', marker=dict(symbol='triangle-up', size=18, color='#38bdf8')), row=1, col=1)
+    # Mesnetleri (üçgenleri) kirişin her iki ucuna (0 ve L) yerleştirir
+fig.add_trace(go.Scatter(
+    x=[0, L], 
+    y=[-h/2-0.1, -h/2-0.1], 
+    mode='markers', 
+    marker=dict(symbol='triangle-up', size=18, color='#38bdf8'),
+    name='Mesnetler'
+), row=1, col=1)
 else:
     fig.add_trace(go.Scatter(x=[0, 0], y=[-0.8, 0.8], mode='lines', line=dict(color='brown', width=8)), row=1, col=1)
 
