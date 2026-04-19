@@ -5,7 +5,7 @@ from plotly.subplots import make_subplots
 from fpdf import FPDF
 
 # 1. TASARIM VE SAYFA AYARLARI
-st.set_page_config(page_title="StuMech Pro v2.2", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="StuMech Pro", page_icon="⚙️", layout="wide")
 
 st.markdown("""
     <style>
