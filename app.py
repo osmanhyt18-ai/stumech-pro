@@ -6,7 +6,7 @@ from fpdf import FPDF
 import os
 
 # 1. TASARIM VE SAYFA AYARLARI
-st.set_page_config(page_title="StuMech Pro v2.4", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="StuMech Pro v2.5", page_icon="⚙️", layout="wide")
 
 st.markdown("""
     <style>
@@ -28,7 +28,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("⚙️ StuMech Pro v2.4: Profesyonel Raporlama Merkezi")
+st.title("⚙️ StuMech Pro v2.5: Profesyonel Raporlama Merkezi")
 
 # 2. GİRİŞ PARAMETRELERİ
 st.sidebar.header("🏢 Sistem Geometrisi")
@@ -38,13 +38,14 @@ L = st.sidebar.slider("Kiris Boyu (m)", 1.0, 15.0, 5.0)
 st.sidebar.header("📐 Kesit Tasarımı")
 kesit_tipi = st.sidebar.selectbox("Kesit Geometrisi", ["Dikdortgen", "Daire", "I-Profil (NPI)", "U-Profil (NPU)"])
 
-# Kesit Hesaplama Mantığı
+# Kesit Hesaplama Mantığı ve Formül Tanımlamaları
 if kesit_tipi == "Dikdortgen":
     b = st.sidebar.slider("Genislik b (mm)", 10, 400, 50) / 1000
     h = st.sidebar.slider("Yukseklik h (mm)", 10, 400, 100) / 1000
     I = (b * h**3) / 12
     W = (b * h**2) / 6
     alan_cizim = {"x": [-b/2, b/2, b/2, -b/2, -b/2], "y": [h/2, h/2, -h/2, -h/2, h/2]}
+    formula_I = r"I = \frac{b \cdot h^3}{12}"
 elif kesit_tipi == "Daire":
     d = st.sidebar.slider("Cap d (mm)", 10, 400, 100) / 1000
     h = d
@@ -52,6 +53,7 @@ elif kesit_tipi == "Daire":
     W = (np.pi * d**3) / 32
     theta = np.linspace(0, 2*np.pi, 100)
     alan_cizim = {"x": (d/2)*np.cos(theta), "y": (d/2)*np.sin(theta)}
+    formula_I = r"I = \frac{\pi \cdot d^4}{64}"
 elif kesit_tipi == "I-Profil (NPI)":
     B = st.sidebar.slider("Baslik Genisligi B (mm)", 50, 300, 100) / 1000
     H = st.sidebar.slider("Toplam Yukseklik H (mm)", 50, 500, 200) / 1000
@@ -61,6 +63,7 @@ elif kesit_tipi == "I-Profil (NPI)":
     W = I / (H / 2)
     alan_cizim = {"x": [-B/2, B/2, B/2, tw/2, tw/2, B/2, B/2, -B/2, -B/2, -tw/2, -tw/2, -B/2, -B/2],
                   "y": [H/2, H/2, H/2-tf, H/2-tf, -H/2+tf, -H/2+tf, -H/2, -H/2, -H/2+tf, -H/2+tf, H/2-tf, H/2-tf, H/2]}
+    formula_I = r"I = \frac{B \cdot H^3}{12} - \frac{(B-t_w) \cdot (H-2t_f)^3}{12}"
 else: # U-Profil
     Bu = st.sidebar.slider("Taban Genisligi B (mm)", 30, 300, 80) / 1000
     Hu = st.sidebar.slider("Toplam Yukseklik H (mm)", 50, 500, 160) / 1000
@@ -70,6 +73,7 @@ else: # U-Profil
     W = I / (Hu / 2)
     alan_cizim = {"x": [Bu, 0, 0, Bu, Bu, tw, tw, Bu, Bu],
                   "y": [Hu/2, Hu/2, -Hu/2, -Hu/2, -Hu/2+tf, -Hu/2+tf, Hu/2-tf, Hu/2-tf, Hu/2]}
+    formula_I = r"I \approx \frac{B \cdot H^3}{12} - \frac{(B-t_w) \cdot (H-2t_f)^3}{12}"
 
 st.sidebar.header("⚖️ Yukleme ve Malzeme")
 P = st.sidebar.number_input("Tekil Yuk (P) [N]", value=2000.0)
@@ -136,69 +140,45 @@ if emniyet > 1.5: st.success("✅ SİSTEM GÜVENLİ")
 elif emniyet > 1.0: st.warning("⚠️ DİKKAT: SINIR DEĞER")
 else: st.error("🚨 RİSKLİ YAPI")
 
-# --- YENİ EĞİTİCİ NOTLAR KISMI ---
+# --- MÜHENDİSLİK NOTLARI ---
 with st.expander("📚 Mühendislik Notları: Bu Sonuçlar Nasıl Hesaplandı?"):
     st.markdown("### 1. Atalet Momenti ($I$)")
     st.write(f"Seçilen {kesit_tipi} kesiti için kullanılan formül:")
     st.latex(formula_I)
     
     st.markdown("### 2. Maksimum Eğilme Gerilmesi ($\sigma_{max}$)")
-    st.write("Gerilme, maksimum momentin mukavemet momentine oranlanmasıyla hesaplanır:")
+    st.write("Gerilme, maksimum momentin mukavemet momentine (W) oranlanmasıyla hesaplanır:")
     st.latex(r"\sigma = \frac{M_{max}}{W} = \frac{M_{max} \cdot c}{I}")
-    st.info(f"Burada c = {h/2:.4f} m (tarafsız eksenden en uzak lif mesafesi).")
     
     st.markdown("### 3. Sehim (Deflection) Hesabı")
-    st.write("Kirişin çökme miktarı, Elastisite Modülü ($E$) ve Atalet Momenti'nin ($I$) çarpımı olan eğilme rijitliğine ($EI$) bağlıdır.")
-    if "Köprü" in sistem_tipi:
-        st.latex(r"y_{max} \approx \frac{P \cdot a \cdot b \cdot (L+a) \cdot \sqrt{3 \cdot a \cdot (L+b)}}{27 \cdot E \cdot I \cdot L}")
+    st.write("Kirişin çökme miktarı eğilme rijitliğine ($EI$) bağlıdır.")
+    if "Kopru" in sistem_tipi:
+        st.latex(r"y_{max} \text{ formülü yükleme konumuna göre dinamik hesaplanır.}")
     else:
         st.latex(r"y_{max} = \frac{P \cdot a^2}{6EI} \cdot (3L-a)")
-        
-# --- PDF OLUŞTURMA FONKSİYONU (LOGOLU) ---
+
+# --- PDF OLUŞTURMA ---
 def pdf_olustur():
     pdf = FPDF()
     pdf.add_page()
-    
-    # Logo Kontrolü
     if os.path.exists("logo.png"):
         pdf.image("logo.png", 10, 8, 33)
-    
     pdf.set_font('Arial', 'B', 16)
     pdf.cell(0, 10, 'StuMech Pro - Teknik Analiz Raporu', 0, 1, 'C')
-    pdf.set_font('Arial', 'I', 10)
-    pdf.cell(0, 10, 'Muhendislik Analiz ve Raporlama Sistemi', 0, 1, 'C')
     pdf.ln(15)
-    
-    # Rapor Bilgileri Tablosu
     pdf.set_font('Arial', 'B', 12)
     pdf.set_fill_color(200, 220, 255)
     pdf.cell(95, 10, 'Parametre', 1, 0, 'C', 1)
     pdf.cell(95, 10, 'Deger', 1, 1, 'C', 1)
-    
     pdf.set_font('Arial', '', 12)
     veriler = [
-        ("Sistem Tipi", sistem_tipi),
-        ("Kiris Boyu", f"{L} m"),
-        ("Kesit Geometrisi", kesit_tipi),
-        ("Malzeme", secilen_mat),
-        ("Maksimum Moment", f"{M_max:.2f} Nm"),
-        ("Maksimum Gerilme", f"{gerilme_max:.2f} MPa"),
-        ("Maksimum Sehim", f"{sehim_max_mm:.2f} mm"),
-        ("Emniyet Faktoru", f"{emniyet:.2f}")
+        ("Kiris Boyu", f"{L} m"), ("Kesit", kesit_tipi), ("Malzeme", secilen_mat),
+        ("Max Moment", f"{M_max:.2f} Nm"), ("Max Gerilme", f"{gerilme_max:.2f} MPa"),
+        ("Max Sehim", f"{sehim_max_mm:.2f} mm"), ("Emniyet", f"{emniyet:.2f}")
     ]
-    
     for p, d in veriler:
-        pdf.cell(95, 10, p, 1)
-        pdf.cell(95, 10, d, 1, 1)
-    
-    pdf.ln(20)
-    pdf.set_font('Arial', 'B', 10)
-    pdf.cell(0, 10, '* Bu rapor StuMech Pro yazilimi tarafindan otomatik olarak uretilmistir.', 0, 1, 'L')
-    
+        pdf.cell(95, 10, p, 1); pdf.cell(95, 10, d, 1, 1)
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 st.markdown("---")
-st.download_button("📥 Logolu Teknik Raporu İndir (PDF)", 
-                   data=pdf_olustur(), 
-                   file_name="stumech_kurumsal_rapor.pdf", 
-                   use_container_width=True)
+st.download_button("📥 Logolu Teknik Raporu İndir (PDF)", data=pdf_olustur(), file_name="stumech_rapor.pdf", use_container_width=True)
