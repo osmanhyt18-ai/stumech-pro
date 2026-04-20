@@ -138,3 +138,49 @@ else: st.error("🚨 RİSKLİ YAPI")
 
 # --- PDF OLUŞTURMA FONKSİYONU (LOGOLU) ---
 def pdf_olustur():
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Logo Kontrolü
+    if os.path.exists("logo.png"):
+        pdf.image("logo.png", 10, 8, 33)
+    
+    pdf.set_font('Arial', 'B', 16)
+    pdf.cell(0, 10, 'StuMech Pro - Teknik Analiz Raporu', 0, 1, 'C')
+    pdf.set_font('Arial', 'I', 10)
+    pdf.cell(0, 10, 'Muhendislik Analiz ve Raporlama Sistemi', 0, 1, 'C')
+    pdf.ln(15)
+    
+    # Rapor Bilgileri Tablosu
+    pdf.set_font('Arial', 'B', 12)
+    pdf.set_fill_color(200, 220, 255)
+    pdf.cell(95, 10, 'Parametre', 1, 0, 'C', 1)
+    pdf.cell(95, 10, 'Deger', 1, 1, 'C', 1)
+    
+    pdf.set_font('Arial', '', 12)
+    veriler = [
+        ("Sistem Tipi", sistem_tipi),
+        ("Kiris Boyu", f"{L} m"),
+        ("Kesit Geometrisi", kesit_tipi),
+        ("Malzeme", secilen_mat),
+        ("Maksimum Moment", f"{M_max:.2f} Nm"),
+        ("Maksimum Gerilme", f"{gerilme_max:.2f} MPa"),
+        ("Maksimum Sehim", f"{sehim_max_mm:.2f} mm"),
+        ("Emniyet Faktoru", f"{emniyet:.2f}")
+    ]
+    
+    for p, d in veriler:
+        pdf.cell(95, 10, p, 1)
+        pdf.cell(95, 10, d, 1, 1)
+    
+    pdf.ln(20)
+    pdf.set_font('Arial', 'B', 10)
+    pdf.cell(0, 10, '* Bu rapor StuMech Pro yazilimi tarafindan otomatik olarak uretilmistir.', 0, 1, 'L')
+    
+    return pdf.output(dest='S').encode('latin-1', 'replace')
+
+st.markdown("---")
+st.download_button("📥 Logolu Teknik Raporu İndir (PDF)", 
+                   data=pdf_olustur(), 
+                   file_name="stumech_kurumsal_rapor.pdf", 
+                   use_container_width=True)
