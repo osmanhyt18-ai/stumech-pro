@@ -136,6 +136,24 @@ if emniyet > 1.5: st.success("✅ SİSTEM GÜVENLİ")
 elif emniyet > 1.0: st.warning("⚠️ DİKKAT: SINIR DEĞER")
 else: st.error("🚨 RİSKLİ YAPI")
 
+# --- YENİ EĞİTİCİ NOTLAR KISMI ---
+with st.expander("📚 Mühendislik Notları: Bu Sonuçlar Nasıl Hesaplandı?"):
+    st.markdown("### 1. Atalet Momenti ($I$)")
+    st.write(f"Seçilen {kesit_tipi} kesiti için kullanılan formül:")
+    st.latex(formula_I)
+    
+    st.markdown("### 2. Maksimum Eğilme Gerilmesi ($\sigma_{max}$)")
+    st.write("Gerilme, maksimum momentin mukavemet momentine oranlanmasıyla hesaplanır:")
+    st.latex(r"\sigma = \frac{M_{max}}{W} = \frac{M_{max} \cdot c}{I}")
+    st.info(f"Burada c = {h/2:.4f} m (tarafsız eksenden en uzak lif mesafesi).")
+    
+    st.markdown("### 3. Sehim (Deflection) Hesabı")
+    st.write("Kirişin çökme miktarı, Elastisite Modülü ($E$) ve Atalet Momenti'nin ($I$) çarpımı olan eğilme rijitliğine ($EI$) bağlıdır.")
+    if "Köprü" in sistem_tipi:
+        st.latex(r"y_{max} \approx \frac{P \cdot a \cdot b \cdot (L+a) \cdot \sqrt{3 \cdot a \cdot (L+b)}}{27 \cdot E \cdot I \cdot L}")
+    else:
+        st.latex(r"y_{max} = \frac{P \cdot a^2}{6EI} \cdot (3L-a)")
+        
 # --- PDF OLUŞTURMA FONKSİYONU (LOGOLU) ---
 def pdf_olustur():
     pdf = FPDF()
